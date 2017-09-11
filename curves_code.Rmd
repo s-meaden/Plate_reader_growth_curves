@@ -1,0 +1,107 @@
+---
+title: "Plate_reader_growth_curves"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Outline
+Script to get Varioskan Flash plate reader output into R-friendly format. First save just the Photometric1 sheet of .xls format output as a .csv file.
+Read in the raw data:
+```{r}
+od<-read.csv("~/Dropbox/CRISPR Postdoc/Loris_Lines/assays/plate_reader_pheno/photmoteric_600_test.csv" ,fill=TRUE, header=TRUE)
+head(od)
+```
+
+Better way to label column based on content of well A1?
+```{r}
+od$idx2<-ifelse(as.numeric(as.character(od$X.1)) > 0 & as.numeric(as.character(od$X.1)) < 1, "GOOD", "BAD") # hacky but works
+# Will cap out if OD exceeds 1. 
+head(od [16:30, ])
+```
+
+Subset just 'good' data:
+```{r}
+od<-od[ which(od$idx2 == "GOOD"),]
+head(od, 20)
+```
+
+Label reads:
+```{r}
+od$read<-rep(1:(nrow(od)/8), each = 8)
+head(od)
+table(od$read)
+```
+
+Clean up, reshape:
+```{r}
+names(od)
+dim(od)
+od<-cbind.data.frame(od[,1:13], od$read)
+head(od)
+colnames(od)[1]<-"Well"
+library(reshape2)
+od<-melt(od, id.vars = c ("Well", "od$read"))
+head(od)
+table(od3$`od$read`)
+# Looks good
+colnames(od)<-c("Row", "Read", "Column", "od600")
+od$Column<-gsub("X.", "", od$Column)
+head(od)
+od$Well<-paste(od$Row, od$Column, sep = "_")
+```
+
+Link to sample info:
+```{r}
+metadata<-read.csv("~/Dropbox/CRISPR Postdoc/Loris_Lines/assays/plate_reader_pheno/metadata_test.csv")
+head(metadata)
+metadata$Well<-paste(metadata$Row, metadata$Column, sep = "_")
+metadata<-metadata[ , 3:5]
+# Now join 
+keeps<-c("Read", "od600", "Well")
+od<-od[ keeps]
+names(od)
+names(metadata)
+od$Well<-as.factor(od$Well)
+metadata$Well<-as.factor(metadata$Well)
+```
+
+Troubleshoot join error:
+```{r}
+nchar(as.character(t1$Well))
+nchar(as.character(t2$Well))
+# FFS. Some whitespace in t1
+# Get rid:
+library(stringr)
+od$Well<-str_trim(od$Well)
+```
+
+Merge data:
+```{r}
+od2<-merge(od, metadata, by.x = "Well", by.y= "Well")
+head(od2)
+```
+
+# Convert read into hours:
+```{r}
+od2$Read<-(od2$Read*30)/60
+```
+
+Plot:
+```{r}
+library(ggplot2)
+od2$od600<-as.numeric(od2$od600)
+
+ggplot(od2, aes(Read, od600))+
+  geom_point( aes(color = Treatment), size = 0.8, alpha = 0.3)+
+  geom_smooth( aes(color = Treatment))+
+  theme_classic()+
+  scale_color_brewer(type = "qual", palette = 6)+
+  xlab("Hours")+
+  ylab("OD600")+
+  theme( text = element_text(size = 15))
+```
+
+
