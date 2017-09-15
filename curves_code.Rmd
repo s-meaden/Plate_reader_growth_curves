@@ -17,8 +17,8 @@ head(od)
 
 Better way to label column based on content of well A1?
 ```{r}
-od$idx2<-ifelse(as.numeric(as.character(od$X.1)) > 0 & as.numeric(as.character(od$X.1)) < 1, "GOOD", "BAD") # hacky but works
-# Will cap out if OD exceeds 1. 
+od$idx2<-ifelse(as.numeric(as.character(od$X.1)) > 0 & as.numeric(as.character(od$X.1)) < 2, "GOOD", "BAD") # hacky but works
+# Will cap out if OD exceeds 2. 
 head(od [16:30, ])
 ```
 
